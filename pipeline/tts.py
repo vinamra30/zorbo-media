@@ -5,8 +5,13 @@ voice=sys.argv[2] if len(sys.argv)>2 else 'bm_george'
 lines=[l.strip() for l in open(sys.argv[1]) if l.strip()]
 out=[];t=0;meta=[];sr=24000
 gap=np.zeros(int(0.28*sr),dtype=np.float32)
+import hashlib,os
+os.makedirs('.ttscache',exist_ok=True)
 for l in lines:
-    a,sr=k.create(l,voice=voice,speed=0.95,lang='en-gb')
+    h='.ttscache/'+hashlib.md5((voice+l).encode()).hexdigest()+'.npy'
+    if os.path.exists(h): a=np.load(h); sr=24000
+    else:
+        a,sr=k.create(l,voice=voice,speed=0.95,lang='en-gb'); np.save(h,a)
     meta.append({'text':l,'start':t,'end':t+len(a)/sr}); out+= [a,gap]; t+=len(a)/sr+0.28
 sf.write('voice.wav',np.concatenate(out),sr); json.dump(meta,open('timing.json','w'),indent=1)
 print(round(t,2))
